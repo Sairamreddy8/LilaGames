@@ -1,0 +1,50 @@
+.board {
+  display: flex;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 8px;
+  gap: 4px;
+}
+
+.col + .col {
+  border-left: 1px solid var(--border);
+}
+
+.label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.count {
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.col.x .count {
+  color: var(--x-color);
+}
+.col.o .count {
+  color: var(--o-color);
+}
+.drawCount {
+  color: var(--faint);
+}

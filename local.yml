@@ -1,0 +1,11 @@
+name: "nakama-server"
+description: "Nakama server configuration"
+database:
+  address:
+    - "postgres:localdb@postgres:5432/nakama"
+logger:
+  level: "DEBUG"
+session:
+  token_expiry_sec: 7200
+runtime:
+  js_entrypoint: "main.js"

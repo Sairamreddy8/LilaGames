@@ -1,0 +1,14 @@
+{
+  "name": "nakama-tictactoe",
+  "version": "1.0.0",
+  "description": "Nakama server-authoritative Tic-Tac-Toe",
+  "main": "build/index.js",
+  "devDependencies": {
+    "esbuild": "^0.21.0",
+    "nakama-runtime": "github:heroiclabs/nakama-common#v1.36.0",
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "build": "cp src/index.js build/main.js"
+  }
+}

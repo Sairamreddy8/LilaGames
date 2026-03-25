@@ -1,0 +1,167 @@
+.screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Clean flat card */
+.card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Logo */
+.logo {
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+.x {
+  color: var(--x-color);
+}
+.divider {
+  color: var(--faint);
+  margin: 0 6px;
+}
+.o {
+  color: var(--o-color);
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.subtitle {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: -12px;
+}
+
+/* Mode toggle */
+.modeToggle {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  width: 100%;
+}
+
+.modeBtn {
+  flex: 1;
+  padding: 7px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  transition: all var(--transition);
+}
+
+.modeBtn.active {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* Error message */
+.error {
+  font-size: 0.8rem;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.18);
+  border-radius: var(--radius-sm);
+  padding: 9px 13px;
+  width: 100%;
+  text-align: center;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.labelX {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--x-color);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  opacity: 0.8;
+}
+
+.labelO {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--o-color);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  opacity: 0.8;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 400;
+  transition: border-color var(--transition);
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(129, 140, 248, 0.5);
+}
+
+.input::placeholder {
+  color: var(--faint);
+}
+
+/* Start button — flat, clean */
+.startBtn {
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  letter-spacing: 0.01em;
+  transition: opacity var(--transition);
+  width: 100%;
+}
+
+.startBtn:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.startBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

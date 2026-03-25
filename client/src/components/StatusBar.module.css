@@ -1,0 +1,38 @@
+.bar {
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  min-height: 48px;
+  color: var(--muted);
+}
+
+.bar.result {
+  background: var(--surface-2);
+  border-color: var(--border-2);
+  color: var(--text);
+}
+
+.symbol {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.text {
+  color: var(--text);
+}
+
+.accentX {
+  color: var(--x-color);
+}
+.accentO {
+  color: var(--o-color);
+}

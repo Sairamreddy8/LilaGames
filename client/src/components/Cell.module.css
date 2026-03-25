@@ -1,0 +1,66 @@
+.cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: clamp(1.8rem, 8vw, 2.6rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    transform var(--transition);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cell:hover:not(.disabled):not([disabled]) {
+  background: var(--surface-2);
+  border-color: var(--border-2);
+}
+
+.cell:active:not(.disabled):not([disabled]) {
+  transform: scale(0.96);
+}
+
+/* X — near white */
+.cell.x {
+  color: var(--x-color);
+}
+
+/* O — soft indigo */
+.cell.o {
+  color: var(--o-color);
+}
+
+/* Winning cell — clean highlight, no glow */
+.cell.winning {
+  background: var(--accent-dim);
+  border-color: rgba(129, 140, 248, 0.35);
+}
+
+.cell.disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* Symbol pop-in */
+.symbol {
+  display: block;
+  animation: pop-in 180ms cubic-bezier(0.34, 1.5, 0.64, 1) both;
+  letter-spacing: -0.04em;
+}
+
+@keyframes pop-in {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
