@@ -366,10 +366,10 @@ function rpcListRooms(ctx, logger, nk, payload) {
   // List matches that are open (player_count < 2)
   var limit = 20;
   var isAuthoritative = true;
-  var label = ""; // prefix matching? no
+  var label = "";
   var minSize = 0;
-  var maxSize = 2;
-  var query = "+label.open:true +label.game:tictactoe";
+  var maxSize = 2; // Return all potentially open rooms
+  var query = "+label.game:tictactoe"; // Relaxed query for maximum reliability
 
   var matches = [];
   try {
@@ -382,8 +382,9 @@ function rpcListRooms(ctx, logger, nk, payload) {
       query,
     );
     logger.info(
-      "rpcListRooms: found %d matches total in Nakama",
+      "rpcListRooms: found %d matches total with query %s",
       matches.length,
+      query,
     );
   } catch (e) {
     logger.error("rpcListRooms failed: %s", e.message);
@@ -393,16 +394,19 @@ function rpcListRooms(ctx, logger, nk, payload) {
   var rooms = [];
   for (var i = 0; i < matches.length; i++) {
     var m = matches[i];
+    if (!m.label) continue;
+
     var labelObj = {};
     try {
       labelObj = JSON.parse(m.label);
     } catch (e) {
       continue;
     }
-    // Only show rooms that were explicitly created (have a room code)
-    if (labelObj.room_code) {
+
+    // Filter only open rooms with a room code here in JS
+    if (labelObj.room_code && labelObj.open) {
       rooms.push({
-        match_id: m.matchId,
+        match_id: m.matchId || m.match_id,
         room_name: labelObj.room_name || "Game Room",
         room_code: labelObj.room_code,
         creator: labelObj.creator || "",
@@ -411,6 +415,7 @@ function rpcListRooms(ctx, logger, nk, payload) {
     }
   }
 
+  logger.info("rpcListRooms: returning %d joinable rooms", rooms.length);
   return JSON.stringify({ rooms: rooms });
 }
 
@@ -423,13 +428,14 @@ function rpcJoinByCode(ctx, logger, nk, payload) {
     return JSON.stringify({ error: "Room code is required" });
   }
 
-  // Search for the match. We'll list all open matches and filter in JS for maximum reliability.
-  var query = "+label.open:true +label.game:tictactoe";
+  // Search for the match. Use broad query to find ANY Tic-Tac-Toe match.
+  var query = "*"; // Broadest query to ensure we find the match even if label.game isn't indexing well
   var matches = [];
   try {
-    matches = nk.matchList(100, true, "", 0, 2, query);
+    // We increase limit to 500 to find any game even if many non-TTT matches exist
+    matches = nk.matchList(500, true, "", 0, 2, query);
     logger.info(
-      "rpcJoinByCode: scanning %d open matches for code %s",
+      "rpcJoinByCode: scanning %d total authoritative matches for code %s",
       matches.length,
       code,
     );
@@ -443,21 +449,16 @@ function rpcJoinByCode(ctx, logger, nk, payload) {
 
   for (var i = 0; i < matches.length; i++) {
     var m = matches[i];
-    logger.info("Checking match %d: %s", i, JSON.stringify(m));
-    if (!m.label) {
-      logger.info("Match %d has no label property!", i);
-      continue;
-    }
+    if (!m.label) continue;
+
     try {
       var l = JSON.parse(m.label);
-      logger.info("Match %d label parsed: %s", i, JSON.stringify(l));
-      if (l.room_code === code) {
+      if (l.room_code === code && l.open) {
         foundMatch = m;
         foundLabel = l;
         break;
       }
     } catch (e) {
-      logger.error("Match %d label parse error: %s", i, e.message);
       continue;
     }
   }
@@ -467,7 +468,7 @@ function rpcJoinByCode(ctx, logger, nk, payload) {
   }
 
   return JSON.stringify({
-    match_id: foundMatch.matchId,
+    match_id: foundMatch.matchId || foundMatch.match_id,
     room_name: foundLabel.room_name || "Game Room",
     room_code: code,
   });
