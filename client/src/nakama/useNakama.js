@@ -30,6 +30,21 @@ export function useNakama() {
   const onMatchDataRef = useRef(null);
   const onMatchPresenceRef = useRef(null);
 
+  /**
+   * Internal helper to connect the Nakama socket if missing.
+   */
+  const connectSocket = useCallback(async (s) => {
+    if (!s) return null;
+    const sock = createSocket();
+    sock.onmatchdata = (data) => onMatchDataRef.current?.(data);
+    sock.onmatchpresence = (evt) => onMatchPresenceRef.current?.(evt);
+    sock.ondisconnect = () => setSocket(null);
+
+    await sock.connect(s, true);
+    setSocket(sock);
+    return sock;
+  }, []);
+
   // ---- Auth on mount ----
   useEffect(() => {
     let cancelled = false;
@@ -40,16 +55,7 @@ export function useNakama() {
         if (cancelled) return;
         setSession(s);
         setAccount(a);
-
-        // Connect socket
-        const sock = createSocket();
-        sock.onmatchdata = (data) => onMatchDataRef.current?.(data);
-        sock.onmatchpresence = (evt) => onMatchPresenceRef.current?.(evt);
-        sock.ondisconnect = () => setSocket(null);
-
-        return sock.connect(s, true).then(() => {
-          if (!cancelled) setSocket(sock);
-        });
+        return connectSocket(s);
       })
       .catch((err) => {
         if (!cancelled) setError(err.message ?? String(err));
@@ -61,14 +67,18 @@ export function useNakama() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [connectSocket]);
 
   const [matchmakerTicket, setMatchmakerTicket] = useState(null);
 
   // ---- Matchmaking (Quick Match) ----
   const findMatch = useCallback(
     async (name) => {
-      if (!socket) throw new Error("Socket not connected");
+      let activeSocket = socket;
+      if (!activeSocket) {
+        activeSocket = await connectSocket(session);
+      }
+      if (!activeSocket) throw new Error("Socket not connected");
 
       // Clean up any existing ticket before adding a new one
       if (matchmakerTicket) {
@@ -116,7 +126,7 @@ export function useNakama() {
         setConnecting(false);
       }
     },
-    [socket, matchmakerTicket],
+    [socket, matchmakerTicket, connectSocket, session],
   );
 
   // ---- Create Room ----
@@ -127,6 +137,12 @@ export function useNakama() {
 
       setConnecting(true);
       try {
+        let activeSocket = socket;
+        if (!activeSocket) {
+          activeSocket = await connectSocket(session);
+        }
+        if (!activeSocket) throw new Error("Could not connect socket");
+
         // Call backend RPC to create a room
         const rpcResult = await nakamaClient.rpc(
           session,
@@ -172,7 +188,11 @@ export function useNakama() {
   // ---- Join Room by Match ID ----
   const joinRoom = useCallback(
     async (matchId, displayName) => {
-      if (!socket) throw new Error("Socket not connected");
+      let activeSocket = socket;
+      if (!activeSocket) {
+        activeSocket = await connectSocket(session);
+      }
+      if (!activeSocket) throw new Error("Socket not connected");
 
       setConnecting(true);
       try {
@@ -183,17 +203,22 @@ export function useNakama() {
         setConnecting(false);
       }
     },
-    [socket],
+    [socket, connectSocket, session],
   );
 
   // ---- Join by Code ----
   const joinByCode = useCallback(
     async (code, displayName) => {
       if (!session) throw new Error("Not authenticated");
-      if (!socket) throw new Error("Socket not connected");
 
       setConnecting(true);
       try {
+        let activeSocket = socket;
+        if (!activeSocket) {
+          activeSocket = await connectSocket(session);
+        }
+        if (!activeSocket) throw new Error("Could not connect socket");
+
         // Resolve code → match_id via RPC
         const rpcResult = await nakamaClient.rpc(
           session,
@@ -211,14 +236,16 @@ export function useNakama() {
         const { match_id } = payload;
 
         // Join the match
-        const m = await socket.joinMatch(match_id, null, { name: displayName });
+        const m = await activeSocket.joinMatch(match_id, null, {
+          name: displayName,
+        });
         setMatch(m);
         return m;
       } finally {
         setConnecting(false);
       }
     },
-    [session, socket],
+    [session, socket, connectSocket],
   );
 
   // ---- Leave match ----
