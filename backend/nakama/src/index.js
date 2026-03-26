@@ -306,13 +306,29 @@ function generateRoomCode() {
   return code;
 }
 
-function rpcCreateRoom(ctx, logger, nk, payload) {
-  var input = {};
+/**
+ * Simple robust JSON parse that handles Uint8Array and double-stringified JSON.
+ */
+function parsePayload(nk, payload) {
+  if (!payload) return {};
+  var str = typeof payload === "string" ? payload : nk.binaryToString(payload);
+  if (!str) return {};
   try {
-    input = JSON.parse(payload);
+    var obj = JSON.parse(str);
+    // If str was "\"{\\\"foo\\\":\\\"bar\\\"}\"", obj is now "{\"foo\":\"bar\"}"
+    if (typeof obj === "string") {
+      return JSON.parse(obj);
+    }
+    return obj;
   } catch (e) {
-    // empty
+    return typeof payload === "object" ? payload : {};
   }
+}
+
+function rpcCreateRoom(ctx, logger, nk, payload) {
+  var input = parsePayload(nk, payload);
+  logger.info("rpcCreateRoom parsed input: %s", JSON.stringify(input));
+
   var roomName = input.room_name || "Game Room";
   var creatorName = input.creator_name || "Host";
   var roomCode = generateRoomCode();
@@ -324,11 +340,19 @@ function rpcCreateRoom(ctx, logger, nk, payload) {
     creatorName,
   );
 
-  var matchId = nk.matchCreate("tictactoe", {
-    room_name: roomName,
-    room_code: roomCode,
-    creator_name: creatorName,
-  });
+  var matchId;
+  try {
+    matchId = nk.matchCreate("tictactoe", {
+      room_name: roomName,
+      room_code: roomCode,
+      creator_name: creatorName,
+    });
+  } catch (e) {
+    logger.error("matchCreate failed: %s", e.message);
+    return JSON.stringify({ error: "Failed to create match" });
+  }
+
+  logger.info("rpcCreateRoom SUCCESS: matchId=%s, code=%s", matchId, roomCode);
 
   return JSON.stringify({
     match_id: matchId,
@@ -338,10 +362,11 @@ function rpcCreateRoom(ctx, logger, nk, payload) {
 }
 
 function rpcListRooms(ctx, logger, nk, payload) {
+  var input = parsePayload(nk, payload);
   // List matches that are open (player_count < 2)
   var limit = 20;
   var isAuthoritative = true;
-  var label = ""; // empty = all matches
+  var label = ""; // prefix matching? no
   var minSize = 0;
   var maxSize = 2;
   var query = "+label.open:true +label.game:tictactoe";
@@ -356,8 +381,13 @@ function rpcListRooms(ctx, logger, nk, payload) {
       maxSize,
       query,
     );
+    logger.info(
+      "rpcListRooms: found %d matches total in Nakama",
+      matches.length,
+    );
   } catch (e) {
-    logger.error("matchList failed: %s", e.message);
+    logger.error("rpcListRooms failed: %s", e.message);
+    return JSON.stringify({ error: "Failed to list rooms" });
   }
 
   var rooms = [];
@@ -385,41 +415,60 @@ function rpcListRooms(ctx, logger, nk, payload) {
 }
 
 function rpcJoinByCode(ctx, logger, nk, payload) {
-  var input = {};
-  try {
-    input = JSON.parse(payload);
-  } catch (e) {
-    // empty
-  }
+  var input = parsePayload(nk, payload);
+  logger.info("rpcJoinByCode parsed input: %s", JSON.stringify(input));
+
   var code = (input.code || "").toUpperCase().trim();
   if (!code) {
-    throw Error("Room code is required");
+    return JSON.stringify({ error: "Room code is required" });
   }
 
-  // Search for a match with this room code
-  var query = "+label.room_code:" + code + " +label.open:true";
+  // Search for the match. We'll list all open matches and filter in JS for maximum reliability.
+  var query = "+label.open:true +label.game:tictactoe";
   var matches = [];
   try {
-    matches = nk.matchList(10, true, "", 0, 2, query);
+    matches = nk.matchList(100, true, "", 0, 2, query);
+    logger.info(
+      "rpcJoinByCode: scanning %d open matches for code %s",
+      matches.length,
+      code,
+    );
   } catch (e) {
     logger.error("matchList for code lookup failed: %s", e.message);
+    return JSON.stringify({ error: "Could not search for rooms" });
   }
 
-  if (matches.length === 0) {
-    throw Error("No open room found with code: " + code);
+  var foundMatch = null;
+  var foundLabel = null;
+
+  for (var i = 0; i < matches.length; i++) {
+    var m = matches[i];
+    logger.info("Checking match %d: %s", i, JSON.stringify(m));
+    if (!m.label) {
+      logger.info("Match %d has no label property!", i);
+      continue;
+    }
+    try {
+      var l = JSON.parse(m.label);
+      logger.info("Match %d label parsed: %s", i, JSON.stringify(l));
+      if (l.room_code === code) {
+        foundMatch = m;
+        foundLabel = l;
+        break;
+      }
+    } catch (e) {
+      logger.error("Match %d label parse error: %s", i, e.message);
+      continue;
+    }
   }
 
-  var match = matches[0];
-  var labelObj = {};
-  try {
-    labelObj = JSON.parse(match.label);
-  } catch (e) {
-    // empty
+  if (!foundMatch) {
+    return JSON.stringify({ error: "Room not found or full: " + code });
   }
 
   return JSON.stringify({
-    match_id: match.matchId,
-    room_name: labelObj.room_name || "Game Room",
+    match_id: foundMatch.matchId,
+    room_name: foundLabel.room_name || "Game Room",
     room_code: code,
   });
 }

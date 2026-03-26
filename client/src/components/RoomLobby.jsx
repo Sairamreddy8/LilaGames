@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "./RoomLobby.module.css";
+import RoomIcon from "../assets/room-svgrepo-com.svg";
+import PlayIcon from "../assets/game-media-movie-music-play-player-svgrepo-com.svg";
 
 /**
  * Room lobby component for browsing rooms and joining by code.
@@ -62,18 +64,18 @@ export default function RoomLobby({
           onClick={() => setActiveTab("browse")}
           type="button"
         >
-          🎮 Browse Rooms
+          Browse Rooms
         </button>
         <button
           className={`${styles.tab} ${activeTab === "code" ? styles.active : ""}`}
           onClick={() => setActiveTab("code")}
           type="button"
         >
-          🔑 Join by Code
+          Join by Code
         </button>
       </div>
 
-      {displayError && <p className={styles.error}>⚠ {displayError}</p>}
+      {displayError && <p className={styles.error}>{displayError}</p>}
 
       {/* Browse tab */}
       {activeTab === "browse" && (
@@ -94,7 +96,7 @@ export default function RoomLobby({
             <div className={styles.loading}>Loading rooms...</div>
           ) : rooms.length === 0 ? (
             <div className={styles.emptyState}>
-              <div className={styles.emptyIcon}>🏠</div>
+              <img src={RoomIcon} className={styles.emptyIcon} alt="No rooms" />
               <p>No rooms available right now.</p>
               <p>Create one or try Quick Match!</p>
             </div>
@@ -145,7 +147,7 @@ export default function RoomLobby({
               type="submit"
               disabled={connecting || code.trim().length < 4}
             >
-              {connecting ? "⏳" : "Join →"}
+              {connecting ? "..." : "Join"}
             </button>
           </div>
           <p className={styles.codeHint}>

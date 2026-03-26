@@ -1,5 +1,7 @@
-import { useState } from "react";
 import styles from "./StartScreen.module.css";
+import { useState } from "react";
+import PlayIcon from "../assets/game-media-movie-music-play-player-svgrepo-com.svg";
+import RoomIcon from "../assets/room-svgrepo-com.svg";
 
 /**
  * Player name entry screen shown before the game starts.
@@ -75,7 +77,7 @@ export default function StartScreen({
           </button>
         </div>
 
-        {error && <p className={styles.error}>⚠ {error}</p>}
+        {error && <p className={styles.error}>{error}</p>}
 
         {/* Name input — always shown */}
         <div className={styles.form}>
@@ -129,7 +131,11 @@ export default function StartScreen({
                 disabled={connecting || !nameValid}
                 type="button"
               >
-                <span className={styles.actionIcon}>⚡</span>
+                <img
+                  src={PlayIcon}
+                  className={styles.actionIcon}
+                  alt="Quick Match"
+                />
                 <span className={styles.actionLabel}>Quick Match</span>
                 <span className={styles.actionHint}>Random opponent</span>
               </button>
@@ -139,7 +145,11 @@ export default function StartScreen({
                 disabled={connecting || !nameValid}
                 type="button"
               >
-                <span className={styles.actionIcon}>🏠</span>
+                <img
+                  src={RoomIcon}
+                  className={styles.actionIcon}
+                  alt="Create Room"
+                />
                 <span className={styles.actionLabel}>Create Room</span>
                 <span className={styles.actionHint}>Invite a friend</span>
               </button>
@@ -152,7 +162,11 @@ export default function StartScreen({
                 disabled={connecting || !nameValid}
                 type="button"
               >
-                <span className={styles.actionIcon}>🔍</span>
+                <img
+                  src={RoomIcon}
+                  className={styles.actionIcon}
+                  alt="Browse Rooms"
+                />
                 <span className={styles.actionLabel}>Browse Rooms</span>
                 <span className={styles.actionHint}>or join by code</span>
               </button>
@@ -182,7 +196,7 @@ export default function StartScreen({
                 disabled={connecting || !nameValid}
                 type="button"
               >
-                {connecting ? "⏳ Creating..." : "Create Room"}
+                {connecting ? "Creating..." : "Create Room"}
               </button>
               <button
                 className={styles.backLink}
@@ -195,7 +209,7 @@ export default function StartScreen({
           )}
 
           {connecting && mode === "online" && !onlineAction && (
-            <div className={styles.connectingMsg}>⏳ Connecting...</div>
+            <div className={styles.connectingMsg}>Connecting...</div>
           )}
         </div>
       </div>

@@ -158,6 +158,10 @@ export function useNakama() {
             ? JSON.parse(rpcResult.payload)
             : rpcResult.payload;
 
+        if (payload.error) {
+          throw new Error(payload.error);
+        }
+
         const { match_id, room_code, room_name } = payload;
 
         // Join the created match
@@ -181,6 +185,10 @@ export function useNakama() {
       typeof rpcResult.payload === "string"
         ? JSON.parse(rpcResult.payload)
         : rpcResult.payload;
+
+    if (payload.error) {
+      throw new Error(payload.error);
+    }
 
     return payload.rooms || []; // Array of { match_id, room_name, room_code, creator, player_count }
   }, [session]);
@@ -232,6 +240,10 @@ export function useNakama() {
           typeof rpcResult.payload === "string"
             ? JSON.parse(rpcResult.payload)
             : rpcResult.payload;
+
+        if (payload.error) {
+          throw new Error(payload.error);
+        }
 
         const { match_id } = payload;
 
