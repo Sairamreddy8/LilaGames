@@ -4,14 +4,18 @@ import styles from "./StartScreen.module.css";
 /**
  * Player name entry screen shown before the game starts.
  * Props:
- *  onStart(nameX, nameO) — callback with entered names
- *  connecting            — bool (show spinner while Nakama connects)
- *  mode                  — 'local' | 'online'
- *  onModeChange(mode)    — callback
- *  error                 — string | null (Nakama connection error)
+ *  onStart(nameX, nameO)       — callback for local / quick match
+ *  onCreateRoom(name, roomName) — callback for room creation
+ *  onBrowseRooms()             — callback to show room lobby
+ *  connecting                  — bool (show spinner while Nakama connects)
+ *  mode                        — 'local' | 'online'
+ *  onModeChange(mode)          — callback
+ *  error                       — string | null (Nakama connection error)
  */
 export default function StartScreen({
   onStart,
+  onCreateRoom,
+  onBrowseRooms,
   connecting,
   mode,
   onModeChange,
@@ -19,11 +23,25 @@ export default function StartScreen({
 }) {
   const [nameX, setNameX] = useState("");
   const [nameO, setNameO] = useState("");
+  const [roomName, setRoomName] = useState("");
+  const [onlineAction, setOnlineAction] = useState(null); // null | 'quick' | 'create' | 'browse'
 
-  const handleSubmit = (e) => {
+  const handleQuickMatch = (e) => {
+    e.preventDefault();
+    onStart(nameX.trim() || "Player X", "");
+  };
+
+  const handleCreateRoom = (e) => {
+    e.preventDefault();
+    onCreateRoom(nameX.trim() || "Player X", roomName.trim() || "Game Room");
+  };
+
+  const handleLocalStart = (e) => {
     e.preventDefault();
     onStart(nameX.trim() || "Player X", nameO.trim() || "Player O");
   };
+
+  const nameValid = nameX.trim().length > 0;
 
   return (
     <div className={styles.screen}>
@@ -40,7 +58,10 @@ export default function StartScreen({
         <div className={styles.modeToggle}>
           <button
             className={`${styles.modeBtn} ${mode === "local" ? styles.active : ""}`}
-            onClick={() => onModeChange("local")}
+            onClick={() => {
+              onModeChange("local");
+              setOnlineAction(null);
+            }}
             type="button"
           >
             Local 2P
@@ -56,10 +77,11 @@ export default function StartScreen({
 
         {error && <p className={styles.error}>⚠ {error}</p>}
 
-        <form onSubmit={handleSubmit} className={styles.form}>
+        {/* Name input — always shown */}
+        <div className={styles.form}>
           <div className={styles.field}>
             <label className={styles.labelX} htmlFor="nameX">
-              Player X
+              Your Name
             </label>
             <input
               id="nameX"
@@ -71,36 +93,111 @@ export default function StartScreen({
             />
           </div>
 
+          {/* === LOCAL MODE === */}
           {mode === "local" && (
-            <div className={styles.field}>
-              <label className={styles.labelO} htmlFor="nameO">
-                Player O
-              </label>
-              <input
-                id="nameO"
-                className={styles.input}
-                placeholder="Enter name…"
-                value={nameO}
-                onChange={(e) => setNameO(e.target.value)}
-                maxLength={20}
-              />
+            <>
+              <div className={styles.field}>
+                <label className={styles.labelO} htmlFor="nameO">
+                  Player O
+                </label>
+                <input
+                  id="nameO"
+                  className={styles.input}
+                  placeholder="Enter name…"
+                  value={nameO}
+                  onChange={(e) => setNameO(e.target.value)}
+                  maxLength={20}
+                />
+              </div>
+              <button
+                className={styles.startBtn}
+                onClick={handleLocalStart}
+                disabled={!nameValid || !nameO.trim()}
+                type="button"
+              >
+                Start Game
+              </button>
+            </>
+          )}
+
+          {/* === ONLINE MODE === */}
+          {mode === "online" && !onlineAction && (
+            <div className={styles.onlineActions}>
+              <button
+                className={styles.actionBtn}
+                onClick={() => handleQuickMatch({ preventDefault: () => {} })}
+                disabled={connecting || !nameValid}
+                type="button"
+              >
+                <span className={styles.actionIcon}>⚡</span>
+                <span className={styles.actionLabel}>Quick Match</span>
+                <span className={styles.actionHint}>Random opponent</span>
+              </button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => setOnlineAction("create")}
+                disabled={connecting || !nameValid}
+                type="button"
+              >
+                <span className={styles.actionIcon}>🏠</span>
+                <span className={styles.actionLabel}>Create Room</span>
+                <span className={styles.actionHint}>Invite a friend</span>
+              </button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => {
+                  if (!nameValid) return;
+                  onBrowseRooms();
+                }}
+                disabled={connecting || !nameValid}
+                type="button"
+              >
+                <span className={styles.actionIcon}>🔍</span>
+                <span className={styles.actionLabel}>Browse Rooms</span>
+                <span className={styles.actionHint}>or join by code</span>
+              </button>
             </div>
           )}
 
-          <button
-            className={styles.startBtn}
-            type="submit"
-            disabled={
-              connecting || !nameX.trim() || (mode === "local" && !nameO.trim())
-            }
-          >
-            {connecting
-              ? "⏳ Connecting…"
-              : mode === "online"
-                ? "Find Match"
-                : "Start Game"}
-          </button>
-        </form>
+          {/* Create Room sub-form */}
+          {mode === "online" && onlineAction === "create" && (
+            <>
+              <div className={styles.field}>
+                <label className={styles.labelRoom} htmlFor="roomName">
+                  Room Name
+                </label>
+                <input
+                  id="roomName"
+                  className={styles.input}
+                  placeholder="My Game Room"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  maxLength={30}
+                  autoFocus
+                />
+              </div>
+              <button
+                className={styles.startBtn}
+                onClick={handleCreateRoom}
+                disabled={connecting || !nameValid}
+                type="button"
+              >
+                {connecting ? "⏳ Creating..." : "Create Room"}
+              </button>
+              <button
+                className={styles.backLink}
+                onClick={() => setOnlineAction(null)}
+                type="button"
+              >
+                ← Back to options
+              </button>
+            </>
+          )}
+
+          {connecting && mode === "online" && !onlineAction && (
+            <div className={styles.connectingMsg}>⏳ Connecting...</div>
+          )}
+        </div>
       </div>
     </div>
   );

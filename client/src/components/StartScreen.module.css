@@ -9,11 +9,11 @@
 /* Clean flat card */
 .card {
   width: 100%;
-  max-width: 360px;
+  max-width: 400px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 36px 32px;
+  padding: 36px 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -121,6 +121,15 @@
   opacity: 0.8;
 }
 
+.labelRoom {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  opacity: 0.8;
+}
+
 .input {
   width: 100%;
   padding: 10px 14px;
@@ -164,4 +173,109 @@
 .startBtn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* Online action buttons */
+.onlineActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  text-align: left;
+  transition: all var(--transition);
+  width: 100%;
+}
+
+.actionBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(129, 140, 248, 0.06);
+}
+
+.actionBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.actionIcon {
+  font-size: 1.3rem;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.actionLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.actionHint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* Back link */
+.backLink {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 8px;
+  transition: color var(--transition);
+  text-align: center;
+}
+
+.backLink:hover {
+  color: var(--text);
+}
+
+/* Connecting message */
+.connectingMsg {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 8px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .card {
+    padding: 28px 20px;
+    border-radius: var(--radius-md);
+  }
+
+  .logo {
+    font-size: 1.8rem;
+  }
+
+  .title {
+    font-size: 1.1rem;
+  }
+
+  .actionBtn {
+    padding: 12px 14px;
+  }
+
+  .actionIcon {
+    font-size: 1.1rem;
+    width: 28px;
+  }
+
+  .actionHint {
+    display: none;
+  }
 }

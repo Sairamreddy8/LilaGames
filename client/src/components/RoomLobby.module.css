@@ -1,0 +1,284 @@
+.lobbyContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Tab bar for Browse / Join by Code */
+.tabBar {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  transition: all var(--transition);
+}
+
+.tab.active {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* Room list */
+.roomList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.roomList::-webkit-scrollbar {
+  width: 4px;
+}
+.roomList::-webkit-scrollbar-track {
+  background: transparent;
+}
+.roomList::-webkit-scrollbar-thumb {
+  background: var(--faint);
+  border-radius: 4px;
+}
+
+.roomCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  transition: border-color var(--transition);
+}
+
+.roomCard:hover {
+  border-color: var(--border-2);
+}
+
+.roomInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.roomName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roomMeta {
+  display: flex;
+  gap: 10px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.roomCode {
+  font-family: "SF Mono", "Fira Code", monospace;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.playerCount {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.playerDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  display: inline-block;
+}
+
+.joinBtn {
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  transition: opacity var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.joinBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.joinBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Empty state */
+.emptyState {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.emptyIcon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+/* Refresh button */
+.refreshRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.refreshBtn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.refreshBtn:hover {
+  border-color: var(--border-2);
+  color: var(--text);
+}
+
+.spinning {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Join by code input */
+.codeForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.codeInputGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.codeInput {
+  flex: 1;
+  padding: 12px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-align: center;
+  text-transform: uppercase;
+  transition: border-color var(--transition);
+}
+
+.codeInput:focus {
+  outline: none;
+  border-color: rgba(129, 140, 248, 0.5);
+}
+
+.codeInput::placeholder {
+  color: var(--faint);
+  font-weight: 400;
+  letter-spacing: 0.15em;
+}
+
+.codeJoinBtn {
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  transition: opacity var(--transition);
+  white-space: nowrap;
+}
+
+.codeJoinBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.codeJoinBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.codeHint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.error {
+  font-size: 0.8rem;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.18);
+  border-radius: var(--radius-sm);
+  padding: 9px 13px;
+  text-align: center;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 24px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Back button */
+.backBtn {
+  padding: 10px;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  transition: all var(--transition);
+  width: 100%;
+}
+
+.backBtn:hover {
+  border-color: var(--border-2);
+  color: var(--text);
+}

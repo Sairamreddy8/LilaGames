@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { authenticateDevice, createSocket } from "./client";
+import { authenticateDevice, createSocket, nakamaClient } from "./client";
 
 /**
- * useNakama — manages Nakama session, socket, and matchmaking.
+ * useNakama — manages Nakama session, socket, matchmaking, and room operations.
  *
  * Exposes:
  *  - session / account  : current auth state
@@ -13,6 +13,10 @@ import { authenticateDevice, createSocket } from "./client";
  *  - findMatch()        : joins matchmaking pool and waits for a match
  *  - leaveMatch()       : leaves the current match
  *  - sendMove(index)    : sends a move via match data (opcode 1)
+ *  - createRoom()       : creates a named room, returns { match_id, room_code }
+ *  - listRooms()        : lists open rooms
+ *  - joinRoom()         : joins a match by ID
+ *  - joinByCode()       : resolves room code → match_id, then joins
  */
 export function useNakama() {
   const [session, setSession] = useState(null);
@@ -61,7 +65,7 @@ export function useNakama() {
 
   const [matchmakerTicket, setMatchmakerTicket] = useState(null);
 
-  // ---- Matchmaking ----
+  // ---- Matchmaking (Quick Match) ----
   const findMatch = useCallback(
     async (name) => {
       if (!socket) throw new Error("Socket not connected");
@@ -82,7 +86,6 @@ export function useNakama() {
         const promise = new Promise((resolve, reject) => {
           socket.onmatchmakermatched = async (matched) => {
             console.log("Matchmaker matched!", matched);
-            // Clear the local ticket state as it's been consumed or will be replaced
             setMatchmakerTicket(null);
 
             try {
@@ -114,6 +117,96 @@ export function useNakama() {
       }
     },
     [socket, matchmakerTicket],
+  );
+
+  // ---- Create Room ----
+  const createRoom = useCallback(
+    async (roomName, displayName) => {
+      if (!session) throw new Error("Not authenticated");
+      if (!socket) throw new Error("Socket not connected");
+
+      setConnecting(true);
+      try {
+        // Call backend RPC to create a room
+        const rpcResult = await nakamaClient.rpc(
+          session,
+          "create_room",
+          JSON.stringify({
+            room_name: roomName || "Game Room",
+            creator_name: displayName || "Host",
+          }),
+        );
+
+        const { match_id, room_code, room_name } = JSON.parse(
+          rpcResult.payload,
+        );
+
+        // Join the created match
+        const m = await socket.joinMatch(match_id, null, { name: displayName });
+        setMatch(m);
+
+        return { match_id, room_code, room_name, match: m };
+      } finally {
+        setConnecting(false);
+      }
+    },
+    [session, socket],
+  );
+
+  // ---- List Rooms ----
+  const listRooms = useCallback(async () => {
+    if (!session) throw new Error("Not authenticated");
+
+    const rpcResult = await nakamaClient.rpc(session, "list_rooms", "{}");
+    const { rooms } = JSON.parse(rpcResult.payload);
+    return rooms; // Array of { match_id, room_name, room_code, creator, player_count }
+  }, [session]);
+
+  // ---- Join Room by Match ID ----
+  const joinRoom = useCallback(
+    async (matchId, displayName) => {
+      if (!socket) throw new Error("Socket not connected");
+
+      setConnecting(true);
+      try {
+        const m = await socket.joinMatch(matchId, null, { name: displayName });
+        setMatch(m);
+        return m;
+      } finally {
+        setConnecting(false);
+      }
+    },
+    [socket],
+  );
+
+  // ---- Join by Code ----
+  const joinByCode = useCallback(
+    async (code, displayName) => {
+      if (!session) throw new Error("Not authenticated");
+      if (!socket) throw new Error("Socket not connected");
+
+      setConnecting(true);
+      try {
+        // Resolve code → match_id via RPC
+        const rpcResult = await nakamaClient.rpc(
+          session,
+          "join_by_code",
+          JSON.stringify({
+            code: code,
+          }),
+        );
+
+        const { match_id } = JSON.parse(rpcResult.payload);
+
+        // Join the match
+        const m = await socket.joinMatch(match_id, null, { name: displayName });
+        setMatch(m);
+        return m;
+      } finally {
+        setConnecting(false);
+      }
+    },
+    [session, socket],
   );
 
   // ---- Leave match ----
@@ -158,7 +251,11 @@ export function useNakama() {
     findMatch,
     leaveMatch,
     sendMove,
-    socket,
+    // Room operations
+    createRoom,
+    listRooms,
+    joinRoom,
+    joinByCode,
     // Let consumers register event handlers
     onMatchDataRef,
     onMatchPresenceRef,
