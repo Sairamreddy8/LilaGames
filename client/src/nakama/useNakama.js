@@ -137,9 +137,12 @@ export function useNakama() {
           }),
         );
 
-        const { match_id, room_code, room_name } = JSON.parse(
-          rpcResult.payload,
-        );
+        const payload =
+          typeof rpcResult.payload === "string"
+            ? JSON.parse(rpcResult.payload)
+            : rpcResult.payload;
+
+        const { match_id, room_code, room_name } = payload;
 
         // Join the created match
         const m = await socket.joinMatch(match_id, null, { name: displayName });
@@ -158,8 +161,12 @@ export function useNakama() {
     if (!session) throw new Error("Not authenticated");
 
     const rpcResult = await nakamaClient.rpc(session, "list_rooms", "{}");
-    const { rooms } = JSON.parse(rpcResult.payload);
-    return rooms; // Array of { match_id, room_name, room_code, creator, player_count }
+    const payload =
+      typeof rpcResult.payload === "string"
+        ? JSON.parse(rpcResult.payload)
+        : rpcResult.payload;
+
+    return payload.rooms || []; // Array of { match_id, room_name, room_code, creator, player_count }
   }, [session]);
 
   // ---- Join Room by Match ID ----
@@ -196,7 +203,12 @@ export function useNakama() {
           }),
         );
 
-        const { match_id } = JSON.parse(rpcResult.payload);
+        const payload =
+          typeof rpcResult.payload === "string"
+            ? JSON.parse(rpcResult.payload)
+            : rpcResult.payload;
+
+        const { match_id } = payload;
 
         // Join the match
         const m = await socket.joinMatch(match_id, null, { name: displayName });
