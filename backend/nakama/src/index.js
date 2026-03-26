@@ -1,5 +1,20 @@
 var matchInit = function (ctx, logger, nk, params) {
   logger.info("Match initialized. ID: %s", ctx.matchId);
+
+  // Build label from params (room name, code, creator) or default
+  var roomName = (params && params.room_name) || "";
+  var roomCode = (params && params.room_code) || "";
+  var creatorName = (params && params.creator_name) || "";
+
+  var label = JSON.stringify({
+    game: "tictactoe",
+    room_name: roomName,
+    room_code: roomCode,
+    creator: creatorName,
+    open: true,
+    player_count: 0,
+  });
+
   var state = {
     board: [null, null, null, null, null, null, null, null, null],
     presences: {}, // Keyed by sessionId: { userId, symbol, name }
@@ -9,11 +24,14 @@ var matchInit = function (ctx, logger, nk, params) {
     winner: null,
     isDraw: false,
     rematchRequests: {}, // Tracks sessionIds that want a rematch
+    roomName: roomName,
+    roomCode: roomCode,
+    creatorName: creatorName,
   };
   return {
     state: state,
     tickRate: 10,
-    label: "tictactoe",
+    label: label,
   };
 };
 
@@ -66,6 +84,19 @@ var matchJoin = function (ctx, logger, nk, dispatcher, tick, state, presences) {
   });
 
   broadcastFullState(dispatcher, state);
+
+  // Update label with player count
+  var playerCount = Object.keys(state.presences).length;
+  var labelObj = {
+    game: "tictactoe",
+    room_name: state.roomName || "",
+    room_code: state.roomCode || "",
+    creator: state.creatorName || "",
+    open: playerCount < 2,
+    player_count: playerCount,
+  };
+  dispatcher.matchLabelUpdate(JSON.stringify(labelObj));
+
   return { state: state };
 };
 
@@ -84,6 +115,18 @@ var matchLeave = function (
     delete state.rematchRequests[p.sessionId];
     logger.info("Player %s (session %s) left", p.userId, p.sessionId);
   });
+
+  // Update label with player count
+  var playerCount = Object.keys(state.presences).length;
+  var labelObj = {
+    game: "tictactoe",
+    room_name: state.roomName || "",
+    room_code: state.roomCode || "",
+    creator: state.creatorName || "",
+    open: playerCount < 2,
+    player_count: playerCount,
+  };
+  dispatcher.matchLabelUpdate(JSON.stringify(labelObj));
 
   // If only 1 player remains, tell them their opponent left
   var remainingSessions = Object.keys(state.presences);
@@ -252,8 +295,137 @@ function matchmakerMatched(ctx, logger, nk, matchedEntries) {
   return nk.matchCreate("tictactoe", {});
 }
 
+// ============== Room RPCs ==============
+
+function generateRoomCode() {
+  var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I/O/0/1 to avoid confusion
+  var code = "";
+  for (var i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+function rpcCreateRoom(ctx, logger, nk, payload) {
+  var input = {};
+  try {
+    input = JSON.parse(payload);
+  } catch (e) {
+    // empty
+  }
+  var roomName = input.room_name || "Game Room";
+  var creatorName = input.creator_name || "Host";
+  var roomCode = generateRoomCode();
+
+  logger.info(
+    "Creating room '%s' with code %s by %s",
+    roomName,
+    roomCode,
+    creatorName,
+  );
+
+  var matchId = nk.matchCreate("tictactoe", {
+    room_name: roomName,
+    room_code: roomCode,
+    creator_name: creatorName,
+  });
+
+  return JSON.stringify({
+    match_id: matchId,
+    room_code: roomCode,
+    room_name: roomName,
+  });
+}
+
+function rpcListRooms(ctx, logger, nk, payload) {
+  // List matches that are open (player_count < 2)
+  var limit = 20;
+  var isAuthoritative = true;
+  var label = ""; // empty = all matches
+  var minSize = 0;
+  var maxSize = 2;
+  var query = "+label.open:true +label.game:tictactoe";
+
+  var matches = [];
+  try {
+    matches = nk.matchList(
+      limit,
+      isAuthoritative,
+      label,
+      minSize,
+      maxSize,
+      query,
+    );
+  } catch (e) {
+    logger.error("matchList failed: %s", e.message);
+  }
+
+  var rooms = [];
+  for (var i = 0; i < matches.length; i++) {
+    var m = matches[i];
+    var labelObj = {};
+    try {
+      labelObj = JSON.parse(m.label);
+    } catch (e) {
+      continue;
+    }
+    // Only show rooms that were explicitly created (have a room code)
+    if (labelObj.room_code) {
+      rooms.push({
+        match_id: m.matchId,
+        room_name: labelObj.room_name || "Game Room",
+        room_code: labelObj.room_code,
+        creator: labelObj.creator || "",
+        player_count: m.size,
+      });
+    }
+  }
+
+  return JSON.stringify({ rooms: rooms });
+}
+
+function rpcJoinByCode(ctx, logger, nk, payload) {
+  var input = {};
+  try {
+    input = JSON.parse(payload);
+  } catch (e) {
+    // empty
+  }
+  var code = (input.code || "").toUpperCase().trim();
+  if (!code) {
+    throw Error("Room code is required");
+  }
+
+  // Search for a match with this room code
+  var query = "+label.room_code:" + code + " +label.open:true";
+  var matches = [];
+  try {
+    matches = nk.matchList(10, true, "", 0, 2, query);
+  } catch (e) {
+    logger.error("matchList for code lookup failed: %s", e.message);
+  }
+
+  if (matches.length === 0) {
+    throw Error("No open room found with code: " + code);
+  }
+
+  var match = matches[0];
+  var labelObj = {};
+  try {
+    labelObj = JSON.parse(match.label);
+  } catch (e) {
+    // empty
+  }
+
+  return JSON.stringify({
+    match_id: match.matchId,
+    room_name: labelObj.room_name || "Game Room",
+    room_code: code,
+  });
+}
+
 function InitModule(ctx, logger, nk, initializer) {
-  logger.info("Initializing Tic-Tac-Toe module (Dual Rematch)...");
+  logger.info("Initializing Tic-Tac-Toe module (Rooms + Matchmaking)...");
 
   initializer.registerMatch("tictactoe", {
     matchInit: matchInit,
@@ -266,4 +438,11 @@ function InitModule(ctx, logger, nk, initializer) {
   });
 
   initializer.registerMatchmakerMatched(matchmakerMatched);
+
+  // Room management RPCs
+  initializer.registerRpc("create_room", rpcCreateRoom);
+  initializer.registerRpc("list_rooms", rpcListRooms);
+  initializer.registerRpc("join_by_code", rpcJoinByCode);
+
+  logger.info("RPCs registered: create_room, list_rooms, join_by_code");
 }
