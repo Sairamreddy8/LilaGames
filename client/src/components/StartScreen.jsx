@@ -147,7 +147,7 @@ export default function StartScreen({
                 className={styles.actionBtn}
                 onClick={() => {
                   if (!nameValid) return;
-                  onBrowseRooms();
+                  onBrowseRooms(nameX.trim());
                 }}
                 disabled={connecting || !nameValid}
                 type="button"

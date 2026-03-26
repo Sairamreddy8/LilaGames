@@ -226,15 +226,17 @@ export default function App() {
     [match, leaveMatch, createRoom],
   );
 
-  const handleBrowseRooms = useCallback(() => {
+  const handleBrowseRooms = useCallback((name) => {
+    setUserName(name);
     setGamePhase("lobby");
   }, []);
 
   const handleJoinRoom = useCallback(
     async (matchId) => {
+      const name = userName || "Player";
       try {
         if (match) await leaveMatch();
-        const m = await joinRoom(matchId, userName || "Player");
+        await joinRoom(matchId, name);
         setGamePhase("playing");
       } catch (e) {
         console.error("Join room failed:", e);
@@ -245,9 +247,10 @@ export default function App() {
 
   const handleJoinByCode = useCallback(
     async (code) => {
+      const name = userName || "Player";
       try {
         if (match) await leaveMatch();
-        const m = await joinByCode(code, userName || "Player");
+        await joinByCode(code, name);
         setGamePhase("playing");
       } catch (e) {
         console.error("Join by code failed:", e);
