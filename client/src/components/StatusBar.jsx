@@ -1,13 +1,14 @@
 import styles from "./StatusBar.module.css";
 
 /**
- * Shows current turn, winner, or draw.
+ * Shows current turn, winner, or draw, plus a per-turn countdown.
  * Props:
  *  currentSymbol — 'X' | 'O'
  *  playerNames   — { X: string, O: string }
  *  winner        — null | 'X' | 'O'
  *  isDraw        — bool
  *  isMyTurn      — bool (for multiplayer awareness)
+ *  timeLeft      — number (seconds remaining in this turn)
  */
 export default function StatusBar({
   currentSymbol,
@@ -15,9 +16,12 @@ export default function StatusBar({
   winner,
   isDraw,
   isMyTurn,
+  timeLeft,
 }) {
   let message;
   let accentClass = currentSymbol === "X" ? styles.accentX : styles.accentO;
+  const showTimer = !winner && !isDraw && timeLeft !== undefined;
+  const urgent = showTimer && timeLeft <= 5;
 
   if (winner) {
     const name = playerNames[winner] ?? `Player ${winner}`;
@@ -50,6 +54,11 @@ export default function StatusBar({
   return (
     <div className={`${styles.bar} ${winner || isDraw ? styles.result : ""}`}>
       {message}
+      {showTimer && (
+        <span className={`${styles.timer} ${urgent ? styles.timerUrgent : ""}`}>
+          {timeLeft}s
+        </span>
+      )}
     </div>
   );
 }

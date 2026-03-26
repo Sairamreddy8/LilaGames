@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNakama } from "./nakama/useNakama";
 import { checkWin, isBoardFull, emptyBoard } from "./game/logic";
 import StartScreen from "./components/StartScreen";
@@ -9,6 +9,7 @@ import RoomLobby from "./components/RoomLobby";
 import styles from "./App.module.css";
 
 const INITIAL_SCORES = { X: 0, O: 0, draws: 0 };
+const TURN_SECONDS = 15;
 
 /**
  * Nakama server opcodes:
@@ -30,6 +31,8 @@ export default function App() {
   const [isDraw, setIsDraw] = useState(false);
   const [winner, setWinner] = useState(null);
   const [scores, setScores] = useState(INITIAL_SCORES);
+  const [timeLeft, setTimeLeft] = useState(TURN_SECONDS);
+  const timerRef = useRef(null);
   const [playerNames, setPlayerNames] = useState({
     X: "Player X",
     O: "Player O",
@@ -40,6 +43,22 @@ export default function App() {
   const [mode, setMode] = useState("local");
   const [mySymbol, setMySymbol] = useState(null); // for online play
   const [rematchWaiting, setRematchWaiting] = useState(false);
+  const [timerEnabled, setTimerEnabled] = useState(true);
+  const [searching, setSearching] = useState(false); // true while addMatchmaker is in flight
+
+  // Refs so the interval callback always reads the latest values
+  const mySymbolRef = useRef(mySymbol);
+  const gamePhaseRef = useRef("start");
+  const currentSymbolRef = useRef("X");
+  const modeRef = useRef("local");
+  const timerEnabledRef = useRef(true);
+
+  useEffect(() => { mySymbolRef.current = mySymbol; }, [mySymbol]);
+  useEffect(() => { gamePhaseRef.current = gamePhase; }, [gamePhase]);
+  useEffect(() => { currentSymbolRef.current = currentSymbol; }, [currentSymbol]);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+  useEffect(() => { timerEnabledRef.current = timerEnabled; }, [timerEnabled]);
+
   const [roomCode, setRoomCode] = useState(null);
   const [roomName, setRoomName] = useState(null);
 
@@ -94,22 +113,11 @@ export default function App() {
         setBoard(payload.board);
         setCurrent(payload.currentSymbol);
 
-        // If we were on the "Game Over" screen and the board was reset, go back to "playing"
-        if (
-          gamePhase === "over" &&
-          payload.board.every((cell) => cell === null)
-        ) {
+        // If both players names are present, ensure we move to playing regardless of phase timing
+        if (payload.playerNames && Object.keys(payload.playerNames).length >= 2) {
           setGamePhase("playing");
+          setSearching(false);
           setRematchWaiting(false);
-          resetRound();
-        }
-
-        // If we were waiting and both players are now in, start playing
-        if (gamePhase === "waiting" && payload.playerNames) {
-          const nameKeys = Object.keys(payload.playerNames);
-          if (nameKeys.length >= 2) {
-            setGamePhase("playing");
-          }
         }
 
         if (payload.playerNames) {
@@ -138,6 +146,51 @@ export default function App() {
       }
     };
   });
+
+  // ---- Per-turn countdown timer ----
+  const stopTimer = useCallback(() => {
+    clearInterval(timerRef.current);
+    timerRef.current = null;
+  }, []);
+
+  const startTimer = useCallback(() => {
+    clearInterval(timerRef.current);
+    setTimeLeft(TURN_SECONDS);
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        const next = prev - 1;
+        if (next <= 0) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+          // Handle timeout directly here — refs are always current, no stale closure
+          const phase = gamePhaseRef.current;
+          const sym = currentSymbolRef.current;
+          const m = modeRef.current;
+          const timerOn = timerEnabledRef.current;
+          if (phase === "playing" && timerOn) {
+            // Online: only fire on the client whose turn it is
+            if (m === "online" && mySymbolRef.current !== sym) return 0;
+            const winnerSym = sym === "X" ? "O" : "X";
+            setWinner(winnerSym);
+            setScores((s) => ({ ...s, [winnerSym]: s[winnerSym] + 1 }));
+            setGamePhase("over");
+          }
+          return 0;
+        }
+        return next;
+      });
+    }, 1000);
+  }, []);
+
+  // Start/reset timer on every turn change or game phase change
+  useEffect(() => {
+    if (gamePhase === "playing" && timerEnabled) {
+      startTimer();
+    } else {
+      stopTimer();
+    }
+    return () => stopTimer();
+  }, [gamePhase, currentSymbol, timerEnabled, startTimer, stopTimer]);
 
   // ---- Core move logic ----
   const applyMove = useCallback(
@@ -194,16 +247,20 @@ export default function App() {
         // Quick Match
         try {
           if (match) await leaveMatch();
-          await findMatch(nameX);
-          setGamePhase("playing");
+          setSearching(true);
+          // Set 'connecting' — game starts only when STATE_SYNC confirms both players
+          await findMatch(nameX, timerEnabled);
+          setSearching(false);
+          setGamePhase("connecting");
         } catch (e) {
+          setSearching(false);
           console.error("Matchmaking failed:", e);
         }
       } else {
         setGamePhase("playing");
       }
     },
-    [mode, findMatch, match, leaveMatch],
+    [mode, findMatch, match, leaveMatch, timerEnabled],
   );
 
   const handleCreateRoom = useCallback(
@@ -264,6 +321,7 @@ export default function App() {
     setWinLine(null);
     setIsDraw(false);
     setWinner(null);
+    setTimeLeft(TURN_SECONDS);
   };
 
   const handlePlayAgain = () => {
@@ -276,15 +334,38 @@ export default function App() {
     }
   };
 
-  const handleNewGame = async () => {
-    if (mode === "online" && match) await leaveMatch();
+  const handleNewGame = useCallback(async () => {
+    if (mode === "online") {
+      try {
+        await leaveMatch();
+      } catch (e) {
+        console.warn("Error during leaveMatch in handleNewGame:", e);
+      }
+    }
     resetRound();
     setScores(INITIAL_SCORES);
     setRoomCode(null);
     setRoomName(null);
     setMySymbol(null);
     setGamePhase("start");
-  };
+  }, [mode, leaveMatch]);
+
+  // ---- Cancel matchmaking / ghost-match timeout ----
+  const cancelSearch = useCallback(async () => {
+    setSearching(false);
+    await handleNewGame();
+  }, [handleNewGame]);
+
+  // Ghost-match timeout: if still 'connecting' after 30s with no second player, bail out.
+  // 30s matches the matchmaking window; handleNewGame is stable so this only fires once.
+  useEffect(() => {
+    if (gamePhase !== "connecting") return;
+    const t = setTimeout(async () => {
+      console.warn("Ghost match: no second player after 30s, returning to start");
+      await handleNewGame();
+    }, 30_000);
+    return () => clearTimeout(t);
+  }, [gamePhase, handleNewGame]);
 
   const isMyTurn = mode === "online" ? currentSymbol === mySymbol : undefined;
   const boardDisabled =
@@ -301,6 +382,10 @@ export default function App() {
           mode={mode}
           onModeChange={setMode}
           error={nakamaError}
+          timerEnabled={timerEnabled}
+          onTimerToggle={() => setTimerEnabled((v) => !v)}
+          searching={searching}
+          onCancelSearch={cancelSearch}
         />
       ) : gamePhase === "lobby" ? (
         <div className={styles.lobbyWrapper}>
@@ -342,6 +427,22 @@ export default function App() {
             </button>
           </div>
         </div>
+      ) : gamePhase === "connecting" ? (
+        <div className={styles.waitingWrapper}>
+          <div className={styles.waitingCard}>
+            <div className={styles.waitingIcon}>🔗</div>
+            <h2 className={styles.waitingTitle}>Connecting…</h2>
+            <p className={styles.waitingSubtext}>Waiting for opponent to join the match</p>
+            <div className={styles.waitingPulse}>
+              <span className={styles.dot} />
+              <span className={styles.dot} />
+              <span className={styles.dot} />
+            </div>
+            <button className={styles.btnSecondary} onClick={handleNewGame}>
+              ✕ Cancel
+            </button>
+          </div>
+        </div>
       ) : (
         <div className={styles.gameLayout}>
           <header className={styles.header}>
@@ -363,6 +464,7 @@ export default function App() {
             winner={winner}
             isDraw={isDraw}
             isMyTurn={isMyTurn}
+            timeLeft={timerEnabled ? timeLeft : undefined}
           />
 
           <Board

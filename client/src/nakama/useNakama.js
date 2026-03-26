@@ -29,6 +29,7 @@ export function useNakama() {
   // Callbacks that the game layer registers to react to incoming events
   const onMatchDataRef = useRef(null);
   const onMatchPresenceRef = useRef(null);
+  const searchingTicketRef = useRef(null);
 
   /**
    * Internal helper to connect the Nakama socket if missing.
@@ -73,7 +74,7 @@ export function useNakama() {
 
   // ---- Matchmaking (Quick Match) ----
   const findMatch = useCallback(
-    async (name) => {
+    async (name, timerEnabled = true) => {
       let activeSocket = socket;
       if (!activeSocket) {
         activeSocket = await connectSocket(session);
@@ -83,7 +84,7 @@ export function useNakama() {
       // Clean up any existing ticket before adding a new one
       if (matchmakerTicket) {
         try {
-          await socket.removeMatchmaker(matchmakerTicket);
+          await activeSocket.removeMatchmaker(matchmakerTicket);
         } catch (e) {
           console.warn("Error removing old ticket:", e);
         }
@@ -94,12 +95,12 @@ export function useNakama() {
 
       try {
         const promise = new Promise((resolve, reject) => {
-          socket.onmatchmakermatched = async (matched) => {
+          activeSocket.onmatchmakermatched = async (matched) => {
             console.log("Matchmaker matched!", matched);
             setMatchmakerTicket(null);
 
             try {
-              const m = await socket.joinMatch(
+              const m = await activeSocket.joinMatch(
                 matched.match_id || null,
                 matched.token || null,
                 { name },
@@ -111,15 +112,30 @@ export function useNakama() {
           };
 
           setTimeout(() => {
-            socket.onmatchmakermatched = null;
+            activeSocket.onmatchmakermatched = undefined;
             reject(new Error("Matchmaking timeout (30s)"));
           }, 30_000);
         });
 
-        const ticketObj = await socket.addMatchmaker("*", 2, 2);
+        // String-property term query: simplest & most reliable Nakama matchmaker approach.
+        // Each ticket advertises timerMode and requires the partner to match it exactly.
+        // "timed" tickets only match "timed"; "untimed" tickets only match "untimed".
+        const timerMode = timerEnabled ? "timed" : "untimed";
+        const timerModeNum = timerEnabled ? 1 : 2;
+        console.log(`[Nakama] Adding matchmaker for mode: ${timerMode} (num: ${timerModeNum})`);
+        const ticketObj = await activeSocket.addMatchmaker(
+          `+properties.timerModeNum:${timerModeNum}`,
+          2,
+          2,
+          { timerMode },  // keep string for logging/label
+          { timerModeNum }, // numeric for reliable query
+        );
+        console.log(`[Nakama] Ticket received: ${ticketObj.ticket}`);
+        searchingTicketRef.current = ticketObj.ticket;
         setMatchmakerTicket(ticketObj.ticket);
 
         const matchedMatch = await promise;
+        searchingTicketRef.current = null;
         setMatch(matchedMatch);
         return matchedMatch;
       } finally {
@@ -264,20 +280,25 @@ export function useNakama() {
   const leaveMatch = useCallback(async () => {
     if (!socket) return;
 
-    // 1. Leave current match if any
+    // 1. Clear any pending matchmaking listener
+    socket.onmatchmakermatched = undefined;
+
+    // 2. Leave current match if any
     if (match) {
       await socket.leaveMatch(match.match_id);
       setMatch(null);
     }
 
-    // 2. Also clear matchmaking ticket if it exists
-    if (matchmakerTicket) {
+    // 3. Also clear matchmaking ticket if it exists
+    const ticket = matchmakerTicket || searchingTicketRef.current;
+    if (ticket) {
       try {
-        await socket.removeMatchmaker(matchmakerTicket);
+        await socket.removeMatchmaker(ticket);
       } catch (e) {
         console.warn("Failed to remove ticket on leave:", e);
       }
       setMatchmakerTicket(null);
+      searchingTicketRef.current = null;
     }
   }, [socket, match, matchmakerTicket]);
 
