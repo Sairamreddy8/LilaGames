@@ -36,3 +36,11 @@
 .accentO {
   color: var(--o-color);
 }
+
+@media (max-width: 480px) {
+  .bar {
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    min-height: 42px;
+  }
+}

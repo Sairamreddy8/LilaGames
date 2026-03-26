@@ -48,3 +48,27 @@
 .drawCount {
   color: var(--faint);
 }
+
+@media (max-width: 480px) {
+  .col {
+    padding: 10px 6px;
+  }
+
+  .label {
+    font-size: 0.62rem;
+  }
+
+  .count {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .col {
+    padding: 8px 4px;
+  }
+
+  .count {
+    font-size: 1.2rem;
+  }
+}
