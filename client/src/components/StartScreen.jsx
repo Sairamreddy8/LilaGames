@@ -2,6 +2,7 @@ import styles from "./StartScreen.module.css";
 import { useState } from "react";
 import PlayIcon from "../assets/game-media-movie-music-play-player-svgrepo-com.svg";
 import RoomIcon from "../assets/room-svgrepo-com.svg";
+import SearchIcon from "../assets/search-svgrepo-com.svg";
 
 /**
  * Player name entry screen shown before the game starts.
@@ -163,7 +164,7 @@ export default function StartScreen({
                 type="button"
               >
                 <img
-                  src={RoomIcon}
+                  src={SearchIcon}
                   className={styles.actionIcon}
                   alt="Browse Rooms"
                 />

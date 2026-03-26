@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import styles from "./RoomLobby.module.css";
 import RoomIcon from "../assets/room-svgrepo-com.svg";
 import PlayIcon from "../assets/game-media-movie-music-play-player-svgrepo-com.svg";
+import SearchIcon from "../assets/search-svgrepo-com.svg";
 
 /**
  * Room lobby component for browsing rooms and joining by code.
@@ -96,7 +97,11 @@ export default function RoomLobby({
             <div className={styles.loading}>Loading rooms...</div>
           ) : rooms.length === 0 ? (
             <div className={styles.emptyState}>
-              <img src={RoomIcon} className={styles.emptyIcon} alt="No rooms" />
+              <img
+                src={SearchIcon}
+                className={styles.emptyIcon}
+                alt="No rooms"
+              />
               <p>No rooms available right now.</p>
               <p>Create one or try Quick Match!</p>
             </div>
