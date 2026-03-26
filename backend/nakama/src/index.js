@@ -27,6 +27,7 @@ var matchInit = function (ctx, logger, nk, params) {
     roomName: roomName,
     roomCode: roomCode,
     creatorName: creatorName,
+    creatorSessionId: null, // To be set on first join
   };
   return {
     state: state,
@@ -66,6 +67,16 @@ var matchJoin = function (ctx, logger, nk, dispatcher, tick, state, presences) {
       symbol: symbol,
       name: name,
     };
+
+    // First player to join is the creator of the room
+    if (state.creatorSessionId === null) {
+      state.creatorSessionId = p.sessionId;
+      logger.info(
+        "Creator session %s assigned for room %s",
+        p.sessionId,
+        state.roomCode,
+      );
+    }
 
     delete state.pendingNames[p.sessionId];
     logger.info(
@@ -116,7 +127,27 @@ var matchLeave = function (
     logger.info("Player %s (session %s) left", p.userId, p.sessionId);
   });
 
-  // Update label with player count
+  // 1. If the room is empty, terminate
+  var remainingSessions = Object.keys(state.presences);
+  if (remainingSessions.length === 0) {
+    logger.info("Room %s is empty, terminating.", state.roomCode);
+    return null;
+  }
+
+  // 2. If it's a private room (has a code) and the creator leaves, terminate
+  var creatorLeft = false;
+  presences.forEach(function (p) {
+    if (p.sessionId === state.creatorSessionId) {
+      creatorLeft = true;
+    }
+  });
+
+  if (state.roomCode && creatorLeft) {
+    logger.info("Creator left room %s, terminating match.", state.roomCode);
+    return null;
+  }
+
+  // 3. Update label with player count for remaining players
   var playerCount = Object.keys(state.presences).length;
   var labelObj = {
     game: "tictactoe",
@@ -128,8 +159,7 @@ var matchLeave = function (
   };
   dispatcher.matchLabelUpdate(JSON.stringify(labelObj));
 
-  // If only 1 player remains, tell them their opponent left
-  var remainingSessions = Object.keys(state.presences);
+  // 4. Notify remaining player
   if (remainingSessions.length === 1) {
     dispatcher.broadcastMessage(6, JSON.stringify({ reason: "Opponent left" }));
   }
