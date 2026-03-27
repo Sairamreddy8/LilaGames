@@ -91,48 +91,60 @@ export default function App() {
         }
       }
 
-      // If we were waiting and someone joined, transition to playing
-      if (presence.joins && presence.joins.length > 0) {
-        setGamePhase((prev) => {
-          if (prev === "waiting") return "playing";
-          return prev;
-        });
-      }
+      // Don't transition to "playing" here — let opCode 2 (state sync) handle it.
+      // OpCode 2 carries the authoritative board state + player names, so transitioning
+      // here could show an empty board before the sync arrives.
     };
   }, [session]);
+
+  // Track previous game-over state so scores only increment once per game
+  const prevGameOverRef = useRef(false);
 
   useEffect(() => {
     onMatchDataRef.current = (data) => {
       const payload = JSON.parse(new TextDecoder().decode(data.data));
 
       if (data.op_code === 1) {
-        // Server confirmed move: { index, symbol }
-        applyMove(payload.index, payload.symbol);
+        // Ignore opCode 1 in online mode — opCode 2 (full state sync) is authoritative.
+        // Applying moves from both opcodes causes double score counting and flicker.
       } else if (data.op_code === 2) {
-        // Full state sync: { board, currentSymbol, winner, isDraw, playerNames }
+        // Full authoritative state sync from server
         setBoard(payload.board);
         setCurrent(payload.currentSymbol);
-
-        // If both players names are present, ensure we move to playing regardless of phase timing
-        if (payload.playerNames && Object.keys(payload.playerNames).length >= 2) {
-          setGamePhase("playing");
-          setSearching(false);
-          setRematchWaiting(false);
-        }
 
         if (payload.playerNames) {
           setPlayerNames((prev) => ({ ...prev, ...payload.playerNames }));
         }
 
+        // Transition to playing once both players are present
+        if (payload.playerNames && Object.keys(payload.playerNames).length >= 2) {
+          setGamePhase((prev) => {
+            if (prev === "waiting" || prev === "connecting") return "playing";
+            return prev;
+          });
+          setSearching(false);
+          setRematchWaiting(false);
+        }
+
         if (payload.winner) {
           setWinner(payload.winner);
           setWinLine(checkWin(payload.board, payload.winner));
-          setScores((s) => ({ ...s, [payload.winner]: s[payload.winner] + 1 }));
+          // Only count the score once per game-over transition
+          if (!prevGameOverRef.current) {
+            prevGameOverRef.current = true;
+            setScores((s) => ({ ...s, [payload.winner]: s[payload.winner] + 1 }));
+          }
           setGamePhase("over");
         } else if (payload.isDraw) {
           setIsDraw(true);
-          setScores((s) => ({ ...s, draws: s.draws + 1 }));
+          if (!prevGameOverRef.current) {
+            prevGameOverRef.current = true;
+            setScores((s) => ({ ...s, draws: s.draws + 1 }));
+          }
           setGamePhase("over");
+        } else {
+          // Game is still in progress — reset the game-over guard
+          prevGameOverRef.current = false;
         }
       } else if (data.op_code === 3) {
         // Symbol assignment: { symbol }
@@ -322,6 +334,7 @@ export default function App() {
     setIsDraw(false);
     setWinner(null);
     setTimeLeft(TURN_SECONDS);
+    prevGameOverRef.current = false;
   };
 
   const handlePlayAgain = () => {
