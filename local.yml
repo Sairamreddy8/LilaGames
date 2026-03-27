@@ -1,17 +1,17 @@
 name: "nakama-server"
 description: "Nakama server configuration"
 database:
-  address:
-    - "postgres:localdb@postgres:5432/nakama"
+  # address:
+  #   - "postgres:localdb@postgres:5432/nakama" # Overridden by command-line flag in Dockerfile
 logger:
-  level: "DEBUG"
+  level: "INFO"
 session:
   token_expiry_sec: 7200
 runtime:
-  js_entrypoint: "main.js"
-  http_key: "defaultkey"
+  js_entrypoint: "index.js"
+  http_key: "production-http-key" # SHOULD BE OVERRIDDEN BY ENV VAR
 socket:
-  server_key: "defaultkey"
+  server_key: "production-server-key" # SHOULD BE OVERRIDDEN BY ENV VAR
 cors:
   origins:
     - "*"
