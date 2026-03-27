@@ -6,9 +6,14 @@ if [ -z "$DATABASE_URL" ]; then
   exit 1
 fi
 
-# Nakama's database.address flag/env expects [user[:password]@][host][:port][/database]
-# Railway provides postgresql://..., so we strip the prefix.
-export NAKAMA_DATABASE_ADDRESS=$(echo $DATABASE_URL | sed -e 's|^postgresql://||' -e 's|^postgres://||')
+# Safer way to strip the protocol prefix (e.g. postgresql://)
+# This avoids issues with special characters in the password.
+NAKAMA_DB_ADDR="${DATABASE_URL#*://}"
+export NAKAMA_DATABASE_ADDRESS="$NAKAMA_DB_ADDR"
+
+# Masked log for debugging (shows everything except the password)
+echo "Connecting to: ${NAKAMA_DB_ADDR%:*}:****@${NAKAMA_DB_ADDR#*@}"
+
 export NAKAMA_CORS_ORIGINS="*"
 export NAKAMA_SOCKET_SERVER_KEY="${NAKAMA_SERVER_KEY:-production-server-key}"
 export NAKAMA_RUNTIME_HTTP_KEY="${NAKAMA_HTTP_KEY:-production-http-key}"
