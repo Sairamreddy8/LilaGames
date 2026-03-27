@@ -14,4 +14,5 @@ exec /nakama/nakama \
   --config /nakama/data/nakama-config.yml \
   --database.address "$DATABASE_URL" \
   --socket.server_key "${NAKAMA_SERVER_KEY:-production-server-key}" \
-  --runtime.http_key "${NAKAMA_HTTP_KEY:-production-http-key}"
+  --runtime.http_key "${NAKAMA_HTTP_KEY:-production-http-key}" \
+  --cors.origins "*"
