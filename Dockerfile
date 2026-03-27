@@ -1,7 +1,7 @@
 FROM heroiclabs/nakama:3.27.0
 
 # Copy the JavaScript module (from source, as the build folder is gitignored)
-COPY ./backend/nakama/src/index.js /nakama/data/modules/main.js
+COPY ./backend/nakama/src/index.js /nakama/data/modules/index.js
 
 # Copy the configuration file
 COPY ./local.yml /nakama/data/nakama-config.yml
