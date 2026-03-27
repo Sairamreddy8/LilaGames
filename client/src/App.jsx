@@ -136,22 +136,6 @@ export default function App() {
           setRematchWaiting(false);
         }
 
-=======
->>>>>>> 09376516cafc990ad46d86f1c07f1e6df16df195
-        if (payload.playerNames) {
-          setPlayerNames((prev) => ({ ...prev, ...payload.playerNames }));
-        }
-
-        // Transition to playing once both players are present
-        if (payload.playerNames && Object.keys(payload.playerNames).length >= 2) {
-          setGamePhase((prev) => {
-            if (prev === "waiting" || prev === "connecting") return "playing";
-            return prev;
-          });
-          setSearching(false);
-          setRematchWaiting(false);
-        }
-
         if (payload.winner) {
           setWinner(payload.winner);
           setWinLine(checkWin(payload.board, payload.winner));
