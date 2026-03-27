@@ -1,8 +1,8 @@
 name: "nakama-server"
 description: "Nakama server configuration"
 database:
-  # address:
-  #   - "postgres:localdb@postgres:5432/nakama" # Overridden by command-line flag in Dockerfile
+  address: [] # Overridden by command-line flag
+  dns_scan_interval_sec: 60
 logger:
   level: "WARN"
 session:
