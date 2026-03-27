@@ -53,11 +53,21 @@ export default function App() {
   const modeRef = useRef("local");
   const timerEnabledRef = useRef(true);
 
-  useEffect(() => { mySymbolRef.current = mySymbol; }, [mySymbol]);
-  useEffect(() => { gamePhaseRef.current = gamePhase; }, [gamePhase]);
-  useEffect(() => { currentSymbolRef.current = currentSymbol; }, [currentSymbol]);
-  useEffect(() => { modeRef.current = mode; }, [mode]);
-  useEffect(() => { timerEnabledRef.current = timerEnabled; }, [timerEnabled]);
+  useEffect(() => {
+    mySymbolRef.current = mySymbol;
+  }, [mySymbol]);
+  useEffect(() => {
+    gamePhaseRef.current = gamePhase;
+  }, [gamePhase]);
+  useEffect(() => {
+    currentSymbolRef.current = currentSymbol;
+  }, [currentSymbol]);
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+  useEffect(() => {
+    timerEnabledRef.current = timerEnabled;
+  }, [timerEnabled]);
 
   const [roomCode, setRoomCode] = useState(null);
   const [roomName, setRoomName] = useState(null);
@@ -114,7 +124,10 @@ export default function App() {
         setCurrent(payload.currentSymbol);
 
         // If both players names are present, ensure we move to playing regardless of phase timing
-        if (payload.playerNames && Object.keys(payload.playerNames).length >= 2) {
+        if (
+          payload.playerNames &&
+          Object.keys(payload.playerNames).length >= 2
+        ) {
           setGamePhase("playing");
           setSearching(false);
           setRematchWaiting(false);
@@ -142,7 +155,6 @@ export default function App() {
         setGamePhase("opponent-left");
       } else if (data.op_code === 9) {
         // Server rejected the move
-        console.warn("Move rejected by server:", payload.reason);
       }
     };
   });
@@ -254,7 +266,6 @@ export default function App() {
           setGamePhase("connecting");
         } catch (e) {
           setSearching(false);
-          console.error("Matchmaking failed:", e);
         }
       } else {
         setGamePhase("playing");
@@ -277,7 +288,7 @@ export default function App() {
         setRoomName(result.room_name);
         setGamePhase("waiting");
       } catch (e) {
-        console.error("Room creation failed:", e);
+        // Handle error silently or show UI feedback
       }
     },
     [match, leaveMatch, createRoom],
@@ -296,7 +307,7 @@ export default function App() {
         await joinRoom(matchId, name);
         setGamePhase("playing");
       } catch (e) {
-        console.error("Join room failed:", e);
+        // Join failed
       }
     },
     [match, leaveMatch, joinRoom, userName],
@@ -310,7 +321,7 @@ export default function App() {
         await joinByCode(code, name);
         setGamePhase("playing");
       } catch (e) {
-        console.error("Join by code failed:", e);
+        // Join failed
       }
     },
     [match, leaveMatch, joinByCode, userName],
@@ -339,7 +350,7 @@ export default function App() {
       try {
         await leaveMatch();
       } catch (e) {
-        console.warn("Error during leaveMatch in handleNewGame:", e);
+        // ignore
       }
     }
     resetRound();
@@ -361,7 +372,6 @@ export default function App() {
   useEffect(() => {
     if (gamePhase !== "connecting") return;
     const t = setTimeout(async () => {
-      console.warn("Ghost match: no second player after 30s, returning to start");
       await handleNewGame();
     }, 30_000);
     return () => clearTimeout(t);
@@ -432,7 +442,9 @@ export default function App() {
           <div className={styles.waitingCard}>
             <div className={styles.waitingIcon}>🔗</div>
             <h2 className={styles.waitingTitle}>Connecting…</h2>
-            <p className={styles.waitingSubtext}>Waiting for opponent to join the match</p>
+            <p className={styles.waitingSubtext}>
+              Waiting for opponent to join the match
+            </p>
             <div className={styles.waitingPulse}>
               <span className={styles.dot} />
               <span className={styles.dot} />

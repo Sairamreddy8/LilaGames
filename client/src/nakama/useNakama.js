@@ -86,7 +86,7 @@ export function useNakama() {
         try {
           await activeSocket.removeMatchmaker(matchmakerTicket);
         } catch (e) {
-          console.warn("Error removing old ticket:", e);
+          // ignore
         }
         setMatchmakerTicket(null);
       }
@@ -96,7 +96,6 @@ export function useNakama() {
       try {
         const promise = new Promise((resolve, reject) => {
           activeSocket.onmatchmakermatched = async (matched) => {
-            console.log("Matchmaker matched!", matched);
             setMatchmakerTicket(null);
 
             try {
@@ -122,15 +121,13 @@ export function useNakama() {
         // "timed" tickets only match "timed"; "untimed" tickets only match "untimed".
         const timerMode = timerEnabled ? "timed" : "untimed";
         const timerModeNum = timerEnabled ? 1 : 2;
-        console.log(`[Nakama] Adding matchmaker for mode: ${timerMode} (num: ${timerModeNum})`);
         const ticketObj = await activeSocket.addMatchmaker(
           `+properties.timerModeNum:${timerModeNum}`,
           2,
           2,
-          { timerMode },  // keep string for logging/label
+          { timerMode }, // keep string for logging/label
           { timerModeNum }, // numeric for reliable query
         );
-        console.log(`[Nakama] Ticket received: ${ticketObj.ticket}`);
         searchingTicketRef.current = ticketObj.ticket;
         setMatchmakerTicket(ticketObj.ticket);
 
@@ -295,7 +292,7 @@ export function useNakama() {
       try {
         await socket.removeMatchmaker(ticket);
       } catch (e) {
-        console.warn("Failed to remove ticket on leave:", e);
+        // Ticket removal failure is usually ignorable
       }
       setMatchmakerTicket(null);
       searchingTicketRef.current = null;
