@@ -6,13 +6,11 @@ if [ -z "$DATABASE_URL" ]; then
   exit 1
 fi
 
-# Safer way to strip the protocol prefix (e.g. postgresql://)
-# This avoids issues with special characters in the password.
-NAKAMA_DB_ADDR="${DATABASE_URL#*://}"
-export NAKAMA_DATABASE_ADDRESS="$NAKAMA_DB_ADDR"
+# Use the full DATABASE_URL directly (Nakama 3.x handles postgresql:// URIs)
+export NAKAMA_DATABASE_ADDRESS="$DATABASE_URL"
 
-# Masked log for debugging (shows everything except the password)
-echo "Connecting to: ${NAKAMA_DB_ADDR%:*}:****@${NAKAMA_DB_ADDR#*@}"
+# Simpler masked log
+echo "Connecting to database URL: ${DATABASE_URL%:*}:****@${DATABASE_URL#*@}"
 
 export NAKAMA_CORS_ORIGINS="*"
 export NAKAMA_SOCKET_SERVER_KEY="${NAKAMA_SERVER_KEY:-production-server-key}"
