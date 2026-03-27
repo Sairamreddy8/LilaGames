@@ -239,6 +239,14 @@ export default function App() {
 
       if (mode === "online") {
         if (currentSymbol !== mySymbol) return;
+        // Optimistic update: show the move instantly, server will confirm via opCode 2
+        setBoard((prev) => {
+          if (prev[index] !== null) return prev;
+          const next = [...prev];
+          next[index] = mySymbol;
+          return next;
+        });
+        setCurrent(mySymbol === "X" ? "O" : "X");
         sendMove(index);
       } else {
         applyMove(index);

@@ -34,7 +34,7 @@ var matchInit = function (ctx, logger, nk, params) {
   };
   return {
     state: state,
-    tickRate: 10,
+    tickRate: 15,
     label: label,
   };
 };
