@@ -4,7 +4,7 @@ database:
   # address:
   #   - "postgres:localdb@postgres:5432/nakama" # Overridden by command-line flag in Dockerfile
 logger:
-  level: "INFO"
+  level: "WARN"
 session:
   token_expiry_sec: 7200
 runtime:

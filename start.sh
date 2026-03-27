@@ -12,10 +12,8 @@ DB_ADDR="${DATABASE_URL#*://}"
 # Ensure we use the PORT provided by Railway
 APP_PORT="${PORT:-7350}"
 
-echo "Running migrations..."
 /nakama/nakama migrate up --database.address "$DB_ADDR"
 
-echo "Starting Nakama on port $APP_PORT with explicit CORS flags..."
 exec /nakama/nakama \
   --config /nakama/data/nakama-config.yml \
   --database.address "$DB_ADDR" \
