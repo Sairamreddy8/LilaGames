@@ -6,18 +6,17 @@ if [ -z "$DATABASE_URL" ]; then
   exit 1
 fi
 
-# Use the full DATABASE_URL directly (Nakama 3.x handles postgresql:// URIs)
-export NAKAMA_DATABASE_ADDRESS="$DATABASE_URL"
+# Strip the protocol prefix (postgresql:// or postgres://) 
+# Nakama flags expect: user:pass@host:port/db
+DB_ADDR="${DATABASE_URL#*://}"
 
-# Simpler masked log
-echo "Connecting to database URL: ${DATABASE_URL%:*}:****@${DATABASE_URL#*@}"
-
+echo "Applying CORS origins: *"
 export NAKAMA_CORS_ORIGINS="*"
 export NAKAMA_SOCKET_SERVER_KEY="${NAKAMA_SERVER_KEY:-production-server-key}"
 export NAKAMA_RUNTIME_HTTP_KEY="${NAKAMA_HTTP_KEY:-production-http-key}"
 
 echo "Running migrations..."
-/nakama/nakama migrate up
+/nakama/nakama migrate up --database.address "$DB_ADDR"
 
 echo "Starting Nakama..."
-exec /nakama/nakama --config /nakama/data/nakama-config.yml
+exec /nakama/nakama --config /nakama/data/nakama-config.yml --database.address "$DB_ADDR"
