@@ -1,25 +1,20 @@
 #!/bin/sh
-
-# Log startup for debugging
 echo "--- NAKAMA STARTUP SCRIPT ---"
-echo "Check for DATABASE_URL..."
 
 if [ -z "$DATABASE_URL" ]; then
   echo "ERROR: DATABASE_URL is not set."
   exit 1
 fi
 
-echo "Running migrations..."
-/nakama/nakama migrate up --database.address "$DATABASE_URL"
-
-echo "Applying CORS origins: *"
-# We set both env var and command line flag for maximum reliability
+# Nakama's database.address flag/env expects [user[:password]@][host][:port][/database]
+# Railway provides postgresql://..., so we strip the prefix.
+export NAKAMA_DATABASE_ADDRESS=$(echo $DATABASE_URL | sed -e 's|^postgresql://||' -e 's|^postgres://||')
 export NAKAMA_CORS_ORIGINS="*"
+export NAKAMA_SOCKET_SERVER_KEY="${NAKAMA_SERVER_KEY:-production-server-key}"
+export NAKAMA_RUNTIME_HTTP_KEY="${NAKAMA_HTTP_KEY:-production-http-key}"
+
+echo "Running migrations..."
+/nakama/nakama migrate up
 
 echo "Starting Nakama..."
-exec /nakama/nakama \
-  --config /nakama/data/nakama-config.yml \
-  --database.address "$DATABASE_URL" \
-  --socket.server_key "${NAKAMA_SERVER_KEY:-production-server-key}" \
-  --runtime.http_key "${NAKAMA_HTTP_KEY:-production-http-key}" \
-  --cors.origins "*"
+exec /nakama/nakama --config /nakama/data/nakama-config.yml
