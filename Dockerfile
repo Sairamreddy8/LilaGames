@@ -10,5 +10,8 @@ COPY ./local.yml /nakama/data/nakama-config.yml
 COPY ./start.sh /nakama/start.sh
 RUN chmod +x /nakama/start.sh
 
+# Set environment variables for the container
+ENV NAKAMA_CORS_ORIGINS="*"
+
 # We override the entrypoint to use our startup script
 ENTRYPOINT ["/nakama/start.sh"]

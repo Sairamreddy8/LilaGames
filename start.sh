@@ -1,15 +1,22 @@
 #!/bin/sh
 
-# Ensure DATABASE_URL is present
+# Log startup for debugging
+echo "--- NAKAMA STARTUP SCRIPT ---"
+echo "Check for DATABASE_URL..."
+
 if [ -z "$DATABASE_URL" ]; then
-  echo "ERROR: DATABASE_URL is not set. Please provide a PostgreSQL connection string."
+  echo "ERROR: DATABASE_URL is not set."
   exit 1
 fi
 
-echo "Running Nakama migrations..."
+echo "Running migrations..."
 /nakama/nakama migrate up --database.address "$DATABASE_URL"
 
-echo "Starting Nakama server..."
+echo "Applying CORS origins: *"
+# We set both env var and command line flag for maximum reliability
+export NAKAMA_CORS_ORIGINS="*"
+
+echo "Starting Nakama..."
 exec /nakama/nakama \
   --config /nakama/data/nakama-config.yml \
   --database.address "$DATABASE_URL" \
