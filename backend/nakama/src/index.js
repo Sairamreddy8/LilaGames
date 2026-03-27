@@ -332,7 +332,10 @@ function matchmakerMatched(ctx, logger, nk, matchedEntries) {
   var params = {};
   if (matchedEntries.length > 0 && matchedEntries[0].properties) {
     params = matchedEntries[0].properties;
-    logger.info("Matchmaker matched with properties: %s", JSON.stringify(params));
+    logger.info(
+      "Matchmaker matched with properties: %s",
+      JSON.stringify(params),
+    );
   }
   return nk.matchCreate("tictactoe", params);
 }
@@ -516,6 +519,12 @@ function rpcJoinByCode(ctx, logger, nk, payload) {
   });
 }
 
+function rpcTest(ctx, logger, nk, payload) {
+  return JSON.stringify({
+    message: "Nakama is alive and LilaGames module is loaded!",
+  });
+}
+
 function InitModule(ctx, logger, nk, initializer) {
   logger.info("Initializing Tic-Tac-Toe module (Rooms + Matchmaking)...");
 
@@ -535,6 +544,7 @@ function InitModule(ctx, logger, nk, initializer) {
   initializer.registerRpc("create_room", rpcCreateRoom);
   initializer.registerRpc("list_rooms", rpcListRooms);
   initializer.registerRpc("join_by_code", rpcJoinByCode);
+  initializer.registerRpc("test", rpcTest);
 
-  logger.info("RPCs registered: create_room, list_rooms, join_by_code");
+  logger.info("RPCs registered: create_room, list_rooms, join_by_code, test");
 }
