@@ -255,9 +255,16 @@
 
 /* Responsive */
 @media (max-width: 480px) {
+  .screen {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: env(safe-area-inset-top, 24px);
+  }
+
   .card {
-    padding: 28px 20px;
+    padding: 24px 18px;
     border-radius: var(--radius-md);
+    gap: 14px;
   }
 
   .logo {
@@ -279,6 +286,31 @@
 
   .actionHint {
     display: none;
+  }
+
+  .input {
+    padding: 12px 14px;
+    font-size: 1rem;
+  }
+
+  .startBtn {
+    padding: 14px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .card {
+    padding: 20px 14px;
+    gap: 12px;
+  }
+
+  .logo {
+    font-size: 1.5rem;
+  }
+
+  .title {
+    font-size: 1rem;
   }
 }
 

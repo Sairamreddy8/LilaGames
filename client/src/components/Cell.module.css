@@ -11,10 +11,14 @@
   cursor: pointer;
   transition:
     background var(--transition),
-    border-color var(--transition),
-    transform var(--transition);
+    border-color var(--transition);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  /* Ensure minimum touch target on mobile */
+  min-height: 80px;
+  min-width: 80px;
+  /* Remove 300ms tap delay */
+  touch-action: manipulation;
 }
 
 .cell:hover:not(.disabled):not([disabled]) {
@@ -47,20 +51,36 @@
   opacity: 0.5;
 }
 
-/* Symbol pop-in */
+/* Symbol pop-in — fast for responsiveness */
 .symbol {
   display: block;
-  animation: pop-in 180ms cubic-bezier(0.34, 1.5, 0.64, 1) both;
+  animation: pop-in 120ms cubic-bezier(0.34, 1.5, 0.64, 1) both;
   letter-spacing: -0.04em;
+  will-change: transform, opacity;
 }
 
 @keyframes pop-in {
   from {
-    transform: scale(0.6);
+    transform: scale(0.7);
     opacity: 0;
   }
   to {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .cell {
+    min-height: 70px;
+    min-width: 70px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+@media (max-width: 360px) {
+  .cell {
+    min-height: 60px;
+    min-width: 60px;
   }
 }

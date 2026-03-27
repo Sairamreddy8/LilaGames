@@ -284,3 +284,31 @@
   border-color: var(--border-2);
   color: var(--text);
 }
+
+@media (max-width: 480px) {
+  .roomList {
+    max-height: 220px;
+  }
+
+  .roomCard {
+    padding: 12px 14px;
+  }
+
+  .codeInput {
+    padding: 14px 12px;
+    font-size: 1.2rem;
+  }
+
+  .codeJoinBtn {
+    padding: 14px 18px;
+  }
+
+  .tab {
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+
+  .joinBtn {
+    padding: 9px 14px;
+  }
+}

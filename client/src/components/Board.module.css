@@ -5,6 +5,9 @@
   width: 100%;
   max-width: 380px;
   aspect-ratio: 1;
+  /* Prevent accidental text selection during gameplay */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 @media (max-width: 480px) {
