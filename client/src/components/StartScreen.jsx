@@ -23,6 +23,10 @@ export default function StartScreen({
   mode,
   onModeChange,
   error,
+  timerEnabled,
+  onTimerToggle,
+  searching,
+  onCancelSearch,
 }) {
   const [nameX, setNameX] = useState("");
   const [nameO, setNameO] = useState("");
@@ -78,6 +82,19 @@ export default function StartScreen({
           </button>
         </div>
 
+        {/* Timer toggle */}
+        <div className={styles.timerRow}>
+          <span className={styles.timerLabel}>⏱ Timer (15s / turn)</span>
+          <button
+            className={`${styles.timerToggle} ${timerEnabled ? styles.timerOn : styles.timerOff}`}
+            onClick={onTimerToggle}
+            type="button"
+            aria-pressed={timerEnabled}
+          >
+            {timerEnabled ? "ON" : "OFF"}
+          </button>
+        </div>
+
         {error && <p className={styles.error}>{error}</p>}
 
         {/* Name input — always shown */}
@@ -124,7 +141,7 @@ export default function StartScreen({
           )}
 
           {/* === ONLINE MODE === */}
-          {mode === "online" && !onlineAction && (
+          {mode === "online" && !onlineAction && !searching && (
             <div className={styles.onlineActions}>
               <button
                 className={styles.actionBtn}
@@ -170,6 +187,25 @@ export default function StartScreen({
                 />
                 <span className={styles.actionLabel}>Browse Rooms</span>
                 <span className={styles.actionHint}>or join by code</span>
+              </button>
+            </div>
+          )}
+
+          {/* Searching state — cancel button */}
+          {mode === "online" && searching && (
+            <div className={styles.searchingState}>
+              <div className={styles.searchingDots}>
+                <span className={styles.sDot} />
+                <span className={styles.sDot} />
+                <span className={styles.sDot} />
+              </div>
+              <p className={styles.searchingText}>Finding opponent…</p>
+              <button
+                className={styles.cancelBtn}
+                onClick={onCancelSearch}
+                type="button"
+              >
+                ✕ Cancel Search
               </button>
             </div>
           )}

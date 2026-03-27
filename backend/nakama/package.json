@@ -9,6 +9,6 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "build": "cp src/index.js build/main.js"
+    "build": "node -e \"require('fs').copyFileSync('src/index.js', 'build/main.js')\""
   }
 }

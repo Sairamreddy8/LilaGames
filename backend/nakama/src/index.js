@@ -1,16 +1,18 @@
 var matchInit = function (ctx, logger, nk, params) {
   logger.info("Match initialized. ID: %s", ctx.matchId);
 
-  // Build label from params (room name, code, creator) or default
+  // Build label from params (room name, code, creator, timer) or default
   var roomName = (params && params.room_name) || "";
   var roomCode = (params && params.room_code) || "";
   var creatorName = (params && params.creator_name) || "";
+  var timerMode = (params && params.timerMode) || "untimed";
 
   var label = JSON.stringify({
     game: "tictactoe",
     room_name: roomName,
     room_code: roomCode,
     creator: creatorName,
+    timerMode: timerMode,
     open: true,
     player_count: 0,
   });
@@ -28,6 +30,7 @@ var matchInit = function (ctx, logger, nk, params) {
     roomCode: roomCode,
     creatorName: creatorName,
     creatorSessionId: null, // To be set on first join
+    timerMode: timerMode,
   };
   return {
     state: state,
@@ -80,11 +83,12 @@ var matchJoin = function (ctx, logger, nk, dispatcher, tick, state, presences) {
 
     delete state.pendingNames[p.sessionId];
     logger.info(
-      "Player %s (%s) joined match %s as %s",
+      "Player %s (%s) joined match %s as %s. Total now: %d",
       name,
       p.userId,
       ctx.matchId,
       symbol,
+      Object.keys(state.presences).length,
     );
 
     try {
@@ -94,6 +98,7 @@ var matchJoin = function (ctx, logger, nk, dispatcher, tick, state, presences) {
     }
   });
 
+  logger.info("Broadcasting full state for match %s", ctx.matchId);
   broadcastFullState(dispatcher, state);
 
   // Update label with player count
@@ -103,6 +108,7 @@ var matchJoin = function (ctx, logger, nk, dispatcher, tick, state, presences) {
     room_name: state.roomName || "",
     room_code: state.roomCode || "",
     creator: state.creatorName || "",
+    timerMode: state.timerMode || "untimed",
     open: playerCount < 2,
     player_count: playerCount,
   };
@@ -154,6 +160,7 @@ var matchLeave = function (
     room_name: state.roomName || "",
     room_code: state.roomCode || "",
     creator: state.creatorName || "",
+    timerMode: state.timerMode || "untimed",
     open: playerCount < 2,
     player_count: playerCount,
   };
@@ -322,7 +329,12 @@ function isBoardFull(board) {
 }
 
 function matchmakerMatched(ctx, logger, nk, matchedEntries) {
-  return nk.matchCreate("tictactoe", {});
+  var params = {};
+  if (matchedEntries.length > 0 && matchedEntries[0].properties) {
+    params = matchedEntries[0].properties;
+    logger.info("Matchmaker matched with properties: %s", JSON.stringify(params));
+  }
+  return nk.matchCreate("tictactoe", params);
 }
 
 // ============== Room RPCs ==============
