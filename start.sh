@@ -24,4 +24,6 @@ exec /nakama/nakama \
   --config /nakama/data/nakama-config.yml \
   --database.address "$DB_ADDR" \
   --database.dns_scan_interval_sec 60 \
-  --socket.port "${PORT:-7350}"
+  --socket.port "${PORT:-7350}" \
+  --socket.server_key "${NAKAMA_SERVER_KEY:-production-server-key}" \
+  --runtime.http_key "${NAKAMA_HTTP_KEY:-production-http-key}"
