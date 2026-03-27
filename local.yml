@@ -1,8 +1,6 @@
 name: "nakama-server"
 description: "Nakama server configuration"
-database:
-  address: [] # Overridden by command-line flag
-  dns_scan_interval_sec: 60
+# Database config is managed via NAKAMA_DATABASE_ADDRESS environment variable
 logger:
   level: "WARN"
 session:

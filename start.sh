@@ -11,6 +11,7 @@ fi
 DB_ADDR="${DATABASE_URL#*://}"
 
 # Export variables for the server process
+export NAKAMA_DATABASE_ADDRESS="$DATABASE_URL"
 export NAKAMA_SOCKET_PORT="${PORT:-7350}"
 export NAKAMA_LOGGER_LEVEL="INFO"
 export NAKAMA_CORS_ORIGINS="*"
@@ -19,5 +20,4 @@ echo "Step 1: Running migrations..."
 /nakama/nakama migrate up --database.address "$DB_ADDR"
 
 echo "Step 2: Starting Nakama server..."
-# Explicitly passing database address because env var was being ignored for some reason
-exec /nakama/nakama --config /nakama/data/nakama-config.yml --database.address "$DB_ADDR"
+exec /nakama/nakama --config /nakama/data/nakama-config.yml
